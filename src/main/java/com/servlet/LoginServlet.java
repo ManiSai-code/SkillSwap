@@ -11,7 +11,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import org.mindrot.jbcrypt.BCrypt;
 @WebServlet("/LoginServlet")
 public class LoginServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -20,39 +20,48 @@ public class LoginServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+    	try {
 
-            Connection c = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/users", "root", "");
+    	    Class.forName("com.mysql.cj.jdbc.Driver");
 
-            String name = request.getParameter("txtName");
-            String pass = request.getParameter("txtPwd");
+    	    Connection c = DriverManager.getConnection(
+    	            "jdbc:mysql://localhost:3306/users", "root", "");
 
-            PreparedStatement ps = c.prepareStatement(
-                    "SELECT username FROM login WHERE username=? AND password=?");
+    	    String name = request.getParameter("txtName");
+    	    String pass = request.getParameter("txtPwd");
 
-            ps.setString(1, name);
-            ps.setString(2, pass);
+    
+    	    PreparedStatement ps = c.prepareStatement(
+    	            "SELECT password FROM login WHERE username=?");
 
-            ResultSet rs = ps.executeQuery();
+    	    ps.setString(1, name);
 
-            if (rs.next()) {
-                // LOGIN SUCCESS
-            	 request.setAttribute("name1",name);
-                 RequestDispatcher rd=request.getRequestDispatcher("profile.jsp");
-               rd.forward(request,response);
-                //response.sendRedirect("profile.jsp");
-            } else {
-                // LOGIN FAILED
-                response.sendRedirect("login.jsp");
-            }
-          
+    	    ResultSet rs = ps.executeQuery();
 
-       
-            rs.close();
-            ps.close();
-            c.close();
+    	    if (rs.next()) {
+
+    	        String storedPassword = rs.getString("password");
+
+    	       
+    	        if (BCrypt.checkpw(pass, storedPassword)) {
+
+    	            request.setAttribute("name1", name);
+    	            RequestDispatcher rd = request.getRequestDispatcher("profile.jsp");
+    	            rd.forward(request, response);
+
+    	        } else {
+    	            response.sendRedirect("login.jsp");
+    	        }
+
+    	    } else {
+
+    	        response.sendRedirect("login.jsp");
+
+    	    }
+
+    	    rs.close();
+    	    ps.close();
+    	    c.close();
 
         } catch (Exception e) {
             e.printStackTrace();
